@@ -1,0 +1,305 @@
+{% extends "base.html" %}
+
+{% block title %}View Presentation - {{ material.title }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <nav aria-label="breadcrumb" class="my-3">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('categories') }}">Categories</a></li>
+                    <li class="breadcrumb-item">
+                        <a href="{{ url_for('categories') }}#category-{{ material.category_id }}">
+                            {{ material.category.name }}
+                        </a>
+                    </li>
+                    <li class="breadcrumb-item active">{{ material.title }}</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- File Info Sidebar (collapsible on mobile) -->
+        <div class="col-md-3">
+            <div class="card mb-3">
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="fas fa-info-circle"></i> Presentation Info</h5>
+                    <button class="btn btn-sm btn-light d-md-none" type="button" data-bs-toggle="collapse" data-bs-target="#infoCollapse">
+                        <i class="fas fa-chevron-down"></i>
+                    </button>
+                </div>
+                <div class="collapse show d-md-block" id="infoCollapse">
+                    <div class="card-body">
+                        <ul class="list-unstyled">
+                            <li class="mb-2">
+                                <strong><i class="fas fa-tag"></i> Title:</strong><br>
+                                {{ material.title }}
+                            </li>
+                            <li class="mb-2">
+                                <strong><i class="fas fa-file"></i> Type:</strong><br>
+                                <span class="badge bg-warning">PowerPoint</span>
+                            </li>
+                            <li class="mb-2">
+                                <strong><i class="fas fa-user"></i> Uploaded by:</strong><br>
+                                {{ material.uploader.username }}
+                            </li>
+                            <li class="mb-2">
+                                <strong><i class="fas fa-calendar"></i> Date:</strong><br>
+                                {{ material.created_at.strftime('%Y-%m-%d %H:%M') }}
+                            </li>
+                            <li class="mb-2">
+                                <strong><i class="fas fa-weight"></i> Size:</strong><br>
+                                {{ material.file_size }}
+                            </li>
+                        </ul>
+                        
+                        <hr>
+                        
+                        <div class="d-grid gap-2">
+                            <a href="{{ url_for('download_file', file_path=material.file_path) }}?download=true" 
+                               class="btn btn-success">
+                                <i class="fas fa-download"></i> Download
+                            </a>
+                            <button onclick="toggleFullscreen()" class="btn btn-primary">
+                                <i class="fas fa-expand"></i> Fullscreen
+                            </button>
+                            <a href="{{ url_for('categories') }}#category-{{ material.category_id }}" 
+                               class="btn btn-outline-secondary">
+                                <i class="fas fa-arrow-left"></i> Back
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- PowerPoint Viewer Main Content -->
+        <div class="col-md-9">
+            <div class="card">
+                <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="fas fa-file-powerpoint text-warning me-2"></i>
+                        {{ material.title }}
+                    </h5>
+                    <div>
+                        <button onclick="toggleFullscreen()" class="btn btn-sm btn-light me-2">
+                            <i class="fas fa-expand"></i> Fullscreen
+                        </button>
+                        <div class="btn-group btn-group-sm">
+                            <button class="btn btn-light" onclick="zoomOut()" title="Zoom Out">
+                                <i class="fas fa-search-minus"></i>
+                            </button>
+                            <span class="btn btn-light disabled" id="zoom-level">100%</span>
+                            <button class="btn btn-light" onclick="zoomIn()" title="Zoom In">
+                                <i class="fas fa-search-plus"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    <!-- Microsoft Office Online Viewer -->
+                    <div id="ppt-viewer-container" style="height: 70vh; width: 100%; overflow: auto; background-color: #f0f0f0;">
+                        <iframe 
+                            src="{{ office_viewer_url }}"
+                            width="100%" 
+                            height="100%" 
+                            frameborder="0"
+                            id="ppt-viewer"
+                            style="border: none;"
+                            allowfullscreen>
+                        </iframe>
+                    </div>
+                    
+                    <!-- Viewer Controls -->
+                    <div class="p-2 bg-light border-top d-flex justify-content-between align-items-center">
+                        <div>
+                            <span class="text-muted small">
+                                <i class="fas fa-info-circle"></i> 
+                                Powered by Microsoft Office Online
+                            </span>
+                        </div>
+                        <div>
+                            <a href="{{ office_viewer_url }}" target="_blank" class="btn btn-sm btn-outline-primary">
+                                <i class="fas fa-external-link-alt"></i> Open in New Tab
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Alternative Options Card -->
+            <div class="card mt-3">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0"><i class="fas fa-cog"></i> Additional Options</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <a href="#" onclick="viewInGoogleSlides()" class="text-decoration-none">
+                                <div class="card bg-light text-center p-3">
+                                    <i class="fab fa-google fa-3x text-success mb-2"></i>
+                                    <h6>Google Slides</h6>
+                                    <small class="text-muted">Upload to Google Drive</small>
+                                </div>
+                            </a>
+                        </div>
+                        <div class="col-md-4">
+                            <a href="#" onclick="downloadAndOpen()" class="text-decoration-none">
+                                <div class="card bg-light text-center p-3">
+                                    <i class="fas fa-download fa-3x text-primary mb-2"></i>
+                                    <h6>Download</h6>
+                                    <small class="text-muted">Save to computer</small>
+                                </div>
+                            </a>
+                        </div>
+                        <div class="col-md-4">
+                            <a href="#" onclick="printPresentation()" class="text-decoration-none">
+                                <div class="card bg-light text-center p-3">
+                                    <i class="fas fa-print fa-3x text-secondary mb-2"></i>
+                                    <h6>Print</h6>
+                                    <small class="text-muted">Print slides</small>
+                                </div>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Fullscreen Modal -->
+<div class="modal fade" id="fullscreenModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-fullscreen">
+        <div class="modal-content">
+            <div class="modal-header bg-dark text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-file-powerpoint text-warning me-2"></i>
+                    {{ material.title }}
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-0" id="fullscreen-content">
+                <iframe 
+                    src="{{ office_viewer_url }}"
+                    width="100%" 
+                    height="100%" 
+                    frameborder="0"
+                    style="border: none;">
+                </iframe>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let currentZoom = 1;
+
+function zoomIn() {
+    const viewer = document.getElementById('ppt-viewer');
+    if (viewer) {
+        currentZoom += 0.1;
+        viewer.style.transform = 'scale(' + currentZoom + ')';
+        viewer.style.transformOrigin = 'top left';
+        document.getElementById('zoom-level').textContent = Math.round(currentZoom * 100) + '%';
+    }
+}
+
+function zoomOut() {
+    const viewer = document.getElementById('ppt-viewer');
+    if (viewer && currentZoom > 0.5) {
+        currentZoom -= 0.1;
+        viewer.style.transform = 'scale(' + currentZoom + ')';
+        viewer.style.transformOrigin = 'top left';
+        document.getElementById('zoom-level').textContent = Math.round(currentZoom * 100) + '%';
+    }
+}
+
+function toggleFullscreen() {
+    const modal = new bootstrap.Modal(document.getElementById('fullscreenModal'));
+    modal.show();
+}
+
+function viewInGoogleSlides() {
+    const fileUrl = "{{ url_for('download_file', file_path=material.file_path) }}?download=true";
+    alert('To view in Google Slides:\n1. Download the presentation\n2. Upload to Google Drive\n3. Right-click and select "Open with Google Slides"');
+    window.open(fileUrl, '_blank');
+}
+
+function downloadAndOpen() {
+    window.open("{{ url_for('download_file', file_path=material.file_path) }}?download=true", '_blank');
+}
+
+function printPresentation() {
+    // Open the Office viewer in a new window and trigger print
+    const printWindow = window.open("{{ office_viewer_url }}", '_blank');
+    setTimeout(() => {
+        printWindow.print();
+    }, 2000);
+}
+
+// Handle keyboard shortcuts
+document.addEventListener('keydown', function(e) {
+    // F11 for fullscreen
+    if (e.key === 'F11') {
+        e.preventDefault();
+        toggleFullscreen();
+    }
+    // Ctrl++ for zoom in
+    if (e.ctrlKey && e.key === '=') {
+        e.preventDefault();
+        zoomIn();
+    }
+    // Ctrl+- for zoom out
+    if (e.ctrlKey && e.key === '-') {
+        e.preventDefault();
+        zoomOut();
+    }
+});
+</script>
+
+<style>
+#ppt-viewer-container {
+    overflow: auto;
+    position: relative;
+    background: repeating-linear-gradient(
+        45deg,
+        #f0f0f0,
+        #f0f0f0 10px,
+        #e0e0e0 10px,
+        #e0e0e0 20px
+    );
+}
+
+#ppt-viewer {
+    transition: transform 0.3s ease;
+    transform-origin: top left;
+    background: white;
+    box-shadow: 0 0 20px rgba(0,0,0,0.1);
+}
+
+.modal-fullscreen {
+    padding: 0 !important;
+}
+
+.modal-fullscreen .modal-content {
+    height: 100vh;
+    border: none;
+    border-radius: 0;
+}
+
+.modal-fullscreen .modal-body {
+    overflow: hidden;
+    padding: 0;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    #ppt-viewer-container {
+        height: 50vh !important;
+    }
+}
+</style>
+{% endblock %}

@@ -1,0 +1,166 @@
+{% extends "base.html" %}
+
+{% block title %}Upload Study Material{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-10 col-lg-8">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0"><i class="fas fa-upload"></i> Upload Study Material</h4>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('upload_material') }}" enctype="multipart/form-data">
+                    <div class="mb-3">
+                        <label for="title" class="form-label">Title <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="title" name="title" required 
+                               placeholder="e.g., Calculus Notes Chapter 1">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="description" class="form-label">Description</label>
+                        <textarea class="form-control" id="description" name="description" rows="3" 
+                                  placeholder="Brief description of the material..."></textarea>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="category_id" class="form-label">Category <span class="text-danger">*</span></label>
+                        <select class="form-select" id="category_id" name="category_id" required>
+                            <option value="">Select a category...</option>
+                            {% for category in categories %}
+                            <option value="{{ category.id }}" {% if selected_category == category.id %}selected{% endif %}>{{ category.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="file" class="form-label">File <span class="text-danger">*</span></label>
+                        <input type="file" class="form-control" id="file" name="file" required 
+                               accept=".pdf,.ppt,.pptx,.csv,.txt,.md,.png,.jpg,.jpeg,.gif,.webp">
+                        <div class="form-text">
+                            <strong>Supported file types:</strong><br>
+                            📄 Documents: PDF, PPT, PPTX, CSV, TXT, MD<br>
+                            🖼️ Images: PNG, JPG, JPEG, GIF, WEBP (max 100MB)
+                        </div>
+                    </div>
+                    
+                    <!-- File Preview Section -->
+                    <div id="filePreview" class="mb-3 d-none">
+                        <label class="form-label">Preview:</label>
+                        <div id="previewContainer" class="border rounded p-3 text-center bg-light">
+                            <!-- Preview will be shown here -->
+                        </div>
+                    </div>
+                    
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <a href="{{ url_for('categories') }}" class="btn btn-secondary me-md-2">
+                            <i class="fas fa-times"></i> Cancel
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-cloud-upload-alt"></i> Upload Material
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <!-- Tips Card -->
+        <div class="card mt-4">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0"><i class="fas fa-lightbulb"></i> Upload Tips</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6><i class="fas fa-file-pdf text-danger"></i> PDF Documents</h6>
+                        <p class="small text-muted">Best for books, papers, and formatted documents</p>
+                    </div>
+                    <div class="col-md-6">
+                        <h6><i class="fas fa-file-powerpoint text-warning"></i> PowerPoint</h6>
+                        <p class="small text-muted">Share presentations and lecture slides</p>
+                    </div>
+                    <div class="col-md-6">
+                        <h6><i class="fas fa-file-csv text-success"></i> CSV Files</h6>
+                        <p class="small text-muted">Share datasets and tabular data</p>
+                    </div>
+                    <div class="col-md-6">
+                        <h6><i class="fas fa-file-alt text-primary"></i> Text Files</h6>
+                        <p class="small text-muted">Notes, summaries, and plain text documents</p>
+                    </div>
+                    <div class="col-md-6">
+                        <h6><i class="fas fa-image text-info"></i> Images</h6>
+                        <p class="small text-muted">Screenshots, diagrams, and visual notes</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.getElementById('file').addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    const previewSection = document.getElementById('filePreview');
+    const previewContainer = document.getElementById('previewContainer');
+    
+    if (file) {
+        previewSection.classList.remove('d-none');
+        
+        // Check file size (100MB limit)
+        if (file.size > 100 * 1024 * 1024) {
+            previewContainer.innerHTML = `
+                <div class="alert alert-danger mb-0">
+                    <i class="fas fa-exclamation-triangle"></i> 
+                    File size exceeds 100MB limit. Please choose a smaller file.
+                </div>
+            `;
+            return;
+        }
+        
+        // Show file info
+        const fileSize = (file.size / 1024 / 1024).toFixed(2);
+        const fileType = file.type || 'unknown';
+        
+        // Create preview based on file type
+        if (file.type.startsWith('image/')) {
+            // Image preview
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                previewContainer.innerHTML = `
+                    <div>
+                        <img src="${e.target.result}" class="img-fluid mb-2" style="max-height: 200px;" alt="Preview">
+                        <div class="mt-2">
+                            <strong>${file.name}</strong><br>
+                            <span class="text-muted">${fileSize} MB - ${fileType}</span>
+                        </div>
+                    </div>
+                `;
+            };
+            reader.readAsDataURL(file);
+        } else {
+            // Document preview
+            let icon = 'fa-file';
+            if (file.name.endsWith('.pdf')) icon = 'fa-file-pdf text-danger';
+            else if (file.name.endsWith('.ppt') || file.name.endsWith('.pptx')) icon = 'fa-file-powerpoint text-warning';
+            else if (file.name.endsWith('.csv')) icon = 'fa-file-csv text-success';
+            else if (file.name.endsWith('.txt') || file.name.endsWith('.md')) icon = 'fa-file-alt text-primary';
+            
+            previewContainer.innerHTML = `
+                <div>
+                    <i class="fas ${icon} fa-4x mb-2"></i>
+                    <div>
+                        <strong>${file.name}</strong><br>
+                        <span class="text-muted">${fileSize} MB</span>
+                    </div>
+                </div>
+            `;
+        }
+    } else {
+        previewSection.classList.add('d-none');
+        previewContainer.innerHTML = '';
+    }
+});
+</script>
+{% endblock %}

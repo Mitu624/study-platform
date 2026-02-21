@@ -1,0 +1,481 @@
+{% extends "base.html" %}
+
+{% block title %}Add New Task{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8 col-lg-8">
+        <div class="card shadow">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0"><i class="fas fa-plus-circle me-2"></i>Create New Task</h4>
+            </div>
+            
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('add_task') }}" enctype="multipart/form-data" id="taskForm">
+                    <!-- Task Title -->
+                    <div class="mb-3">
+                        <label for="title" class="form-label fw-bold">
+                            <i class="fas fa-heading me-1"></i>Task Title <span class="text-danger">*</span>
+                        </label>
+                        <input type="text" 
+                               class="form-control" 
+                               id="title" 
+                               name="title" 
+                               required 
+                               maxlength="200"
+                               placeholder="e.g., Solve this equation, Explain this concept"
+                               value="{{ request.form.get('title', '') }}">
+                        <div class="form-text">Choose a clear and descriptive title</div>
+                    </div>
+                    
+                    <!-- Category Selection -->
+                    <div class="mb-3">
+                        <label for="category_id" class="form-label fw-bold">
+                            <i class="fas fa-folder me-1"></i>Category <span class="text-danger">*</span>
+                        </label>
+                        <select class="form-select" id="category_id" name="category_id" required>
+                            <option value="">-- Select a category --</option>
+                            {% for category in categories %}
+                            <option value="{{ category.id }}" 
+                                    {% if request.form.get('category_id')|int == category.id %}selected{% endif %}>
+                                {{ category.name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                        {% if not categories %}
+                            <div class="text-warning mt-1">
+                                <i class="fas fa-exclamation-triangle"></i> 
+                                No categories found. <a href="{{ url_for('create_category') }}">Create a category first</a>.
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Task Type Selection -->
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">
+                            <i class="fas fa-file me-1"></i>Task Type <span class="text-danger">*</span>
+                        </label>
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <div class="card task-type-card {% if request.form.get('task_type', 'text') == 'text' %}selected{% endif %}" id="textTypeCard">
+                                    <div class="card-body text-center">
+                                        <input type="radio" name="task_type" id="type_text" value="text" class="task-type-radio" {% if request.form.get('task_type', 'text') == 'text' %}checked{% endif %}>
+                                        <i class="fas fa-align-left fa-3x text-primary mb-2"></i>
+                                        <h6>Text Task</h6>
+                                        <small class="text-muted">Describe your task with text</small>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="card task-type-card {% if request.form.get('task_type') == 'image' %}selected{% endif %}" id="imageTypeCard">
+                                    <div class="card-body text-center">
+                                        <input type="radio" name="task_type" id="type_image" value="image" class="task-type-radio" {% if request.form.get('task_type') == 'image' %}checked{% endif %}>
+                                        <i class="fas fa-image fa-3x text-success mb-2"></i>
+                                        <h6>Image Task</h6>
+                                        <small class="text-muted">Upload an image with the task</small>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="card task-type-card {% if request.form.get('task_type') == 'pdf' %}selected{% endif %}" id="pdfTypeCard">
+                                    <div class="card-body text-center">
+                                        <input type="radio" name="task_type" id="type_pdf" value="pdf" class="task-type-radio" {% if request.form.get('task_type') == 'pdf' %}selected{% endif %}>
+                                        <i class="fas fa-file-pdf fa-3x text-danger mb-2"></i>
+                                        <h6>PDF Task</h6>
+                                        <small class="text-muted">Upload a PDF document</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Text Description (shown for text tasks) -->
+                    <div class="mb-3 task-field" id="textDescriptionField">
+                        <label for="description" class="form-label fw-bold">
+                            <i class="fas fa-align-left me-1"></i>Task Description <span class="text-danger">*</span>
+                        </label>
+                        <textarea class="form-control" 
+                                  id="description" 
+                                  name="description" 
+                                  rows="6"
+                                  placeholder="Describe the task in detail...">{{ request.form.get('description', '') }}</textarea>
+                        <div class="form-text">
+                            <i class="fas fa-info-circle text-info"></i> 
+                            Be specific about what you want others to solve
+                        </div>
+                    </div>
+                    
+                    <!-- File Upload (shown for image/pdf tasks) -->
+                    <div class="mb-3 task-field" id="fileUploadField" style="display: none;">
+                        <label class="form-label fw-bold" id="fileUploadLabel">
+                            <i class="fas fa-upload me-1"></i>Upload File <span class="text-danger">*</span>
+                        </label>
+                        
+                        <!-- Drop Zone -->
+                        <div class="drop-zone border rounded-3 p-4 text-center" id="taskDropZone">
+                            <i class="fas fa-cloud-upload-alt fa-3x text-primary mb-3" id="dropZoneIcon"></i>
+                            <h5 id="dropZoneTitle">Drag & Drop or Click to Upload</h5>
+                            <p class="text-muted mb-2" id="dropZoneFormats">Supported formats: PNG, JPG, JPEG, GIF, WEBP</p>
+                            <p class="text-muted small mb-3">Maximum file size: 100MB</p>
+                            
+                            <input type="file" class="d-none" id="task_file" name="task_file" accept="">
+                            <button type="button" class="btn btn-outline-primary rounded-pill" id="browseTaskBtn">
+                                <i class="fas fa-folder-open me-2"></i>Browse Files
+                            </button>
+                        </div>
+                        
+                        <!-- Preview Area -->
+                        <div id="taskFilePreview" class="mt-3 text-center d-none">
+                            <div class="card bg-light">
+                                <div class="card-body">
+                                    <div id="taskPreviewContent">
+                                        <!-- Preview will be shown here -->
+                                    </div>
+                                    <button type="button" class="btn btn-sm btn-outline-danger mt-3" id="removeTaskFile">
+                                        <i class="fas fa-times me-1"></i>Remove
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Form Actions -->
+                    <div class="d-flex justify-content-between align-items-center mt-4">
+                        <a href="{{ url_for('tasks') }}" class="btn btn-outline-secondary">
+                            <i class="fas fa-arrow-left me-1"></i>Cancel
+                        </a>
+                        <button type="submit" class="btn btn-primary" id="submitBtn">
+                            <i class="fas fa-save me-1"></i>Create Task
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <!-- Tips Card -->
+        <div class="card mt-3 bg-light">
+            <div class="card-body">
+                <h6><i class="fas fa-lightbulb text-warning me-2"></i>Tips for Creating Tasks:</h6>
+                <ul class="mb-0 small">
+                    <li>Make the title clear and descriptive</li>
+                    <li>Choose the most relevant category</li>
+                    <li>For text tasks, provide all necessary information</li>
+                    <li>For image tasks, ensure the image is clear and readable</li>
+                    <li>For PDF tasks, make sure all pages are included</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.task-type-card {
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border: 2px solid transparent;
+}
+
+.task-type-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+}
+
+.task-type-card.selected {
+    border-color: #0d6efd;
+    background-color: rgba(13, 110, 253, 0.05);
+}
+
+.task-type-radio {
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.drop-zone {
+    border: 2px dashed #dee2e6;
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.drop-zone:hover,
+.drop-zone.dragover {
+    border-color: #0d6efd;
+    background-color: rgba(13, 110, 253, 0.05);
+}
+
+.avatar-circle {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+}
+
+@media (max-width: 768px) {
+    .avatar-circle {
+        width: 48px;
+        height: 48px;
+        font-size: 1.2rem;
+    }
+}
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Auto-focus title field
+    document.getElementById('title').focus();
+    
+    // Task type selection
+    const textTypeCard = document.getElementById('textTypeCard');
+    const imageTypeCard = document.getElementById('imageTypeCard');
+    const pdfTypeCard = document.getElementById('pdfTypeCard');
+    
+    const textRadio = document.getElementById('type_text');
+    const imageRadio = document.getElementById('type_image');
+    const pdfRadio = document.getElementById('type_pdf');
+    
+    const textField = document.getElementById('textDescriptionField');
+    const fileField = document.getElementById('fileUploadField');
+    const fileUploadLabel = document.getElementById('fileUploadLabel');
+    const dropZoneIcon = document.getElementById('dropZoneIcon');
+    const dropZoneTitle = document.getElementById('dropZoneTitle');
+    const dropZoneFormats = document.getElementById('dropZoneFormats');
+    const taskFileInput = document.getElementById('task_file');
+    
+    // Function to update UI based on selected task type
+    function updateTaskTypeUI() {
+        // Remove selected class from all cards
+        textTypeCard.classList.remove('selected');
+        imageTypeCard.classList.remove('selected');
+        pdfTypeCard.classList.remove('selected');
+        
+        if (textRadio.checked) {
+            textTypeCard.classList.add('selected');
+            textField.style.display = 'block';
+            fileField.style.display = 'none';
+            document.getElementById('description').required = true;
+            taskFileInput.required = false;
+        } else if (imageRadio.checked) {
+            imageTypeCard.classList.add('selected');
+            textField.style.display = 'none';
+            fileField.style.display = 'block';
+            document.getElementById('description').required = false;
+            taskFileInput.required = true;
+            
+            // Update drop zone for images
+            dropZoneIcon.className = 'fas fa-image fa-3x text-success mb-3';
+            dropZoneTitle.textContent = 'Upload Task Image';
+            dropZoneFormats.textContent = 'Supported formats: PNG, JPG, JPEG, GIF, WEBP';
+            taskFileInput.accept = 'image/*';
+            fileUploadLabel.innerHTML = '<i class="fas fa-image me-1"></i>Upload Image <span class="text-danger">*</span>';
+        } else if (pdfRadio.checked) {
+            pdfTypeCard.classList.add('selected');
+            textField.style.display = 'none';
+            fileField.style.display = 'block';
+            document.getElementById('description').required = false;
+            taskFileInput.required = true;
+            
+            // Update drop zone for PDFs
+            dropZoneIcon.className = 'fas fa-file-pdf fa-3x text-danger mb-3';
+            dropZoneTitle.textContent = 'Upload PDF Document';
+            dropZoneFormats.textContent = 'Supported formats: PDF';
+            taskFileInput.accept = '.pdf';
+            fileUploadLabel.innerHTML = '<i class="fas fa-file-pdf me-1"></i>Upload PDF <span class="text-danger">*</span>';
+        }
+    }
+    
+    // Add click handlers to cards
+    textTypeCard.addEventListener('click', function() {
+        textRadio.checked = true;
+        updateTaskTypeUI();
+        resetFileInput();
+    });
+    
+    imageTypeCard.addEventListener('click', function() {
+        imageRadio.checked = true;
+        updateTaskTypeUI();
+        resetFileInput();
+    });
+    
+    pdfTypeCard.addEventListener('click', function() {
+        pdfRadio.checked = true;
+        updateTaskTypeUI();
+        resetFileInput();
+    });
+    
+    // Initialize UI
+    updateTaskTypeUI();
+    
+    // File upload functionality
+    const dropZone = document.getElementById('taskDropZone');
+    const browseBtn = document.getElementById('browseTaskBtn');
+    const taskPreview = document.getElementById('taskFilePreview');
+    const previewContent = document.getElementById('taskPreviewContent');
+    const removeFile = document.getElementById('removeTaskFile');
+    const submitBtn = document.getElementById('submitBtn');
+    
+    function resetFileInput() {
+        taskFileInput.value = '';
+        taskPreview.classList.add('d-none');
+        dropZone.style.display = 'block';
+        previewContent.innerHTML = '';
+    }
+    
+    if (dropZone && taskFileInput) {
+        // Click to browse
+        dropZone.addEventListener('click', function(e) {
+            if (e.target !== browseBtn && !browseBtn.contains(e.target)) {
+                taskFileInput.click();
+            }
+        });
+        
+        browseBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            taskFileInput.click();
+        });
+        
+        // Drag and drop
+        dropZone.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            this.classList.add('dragover');
+        });
+        
+        dropZone.addEventListener('dragleave', function(e) {
+            e.preventDefault();
+            this.classList.remove('dragover');
+        });
+        
+        dropZone.addEventListener('drop', function(e) {
+            e.preventDefault();
+            this.classList.remove('dragover');
+            
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                taskFileInput.files = files;
+                handleFileSelect(files[0]);
+            }
+        });
+        
+        // File selection
+        taskFileInput.addEventListener('change', function(e) {
+            if (this.files.length > 0) {
+                handleFileSelect(this.files[0]);
+            }
+        });
+        
+        function handleFileSelect(file) {
+            // Check file size (100MB limit)
+            if (file.size > 100 * 1024 * 1024) {
+                alert('File size exceeds 100MB limit.');
+                taskFileInput.value = '';
+                return;
+            }
+            
+            const fileExt = file.name.split('.').pop().toLowerCase();
+            
+            if (imageRadio.checked) {
+                // Handle image preview
+                if (file.type.startsWith('image/')) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        previewContent.innerHTML = `
+                            <div class="text-center">
+                                <img src="${e.target.result}" class="img-fluid rounded mb-2" style="max-height: 200px;">
+                                <h6 class="mb-1">${escapeHtml(file.name)}</h6>
+                                <p class="text-muted small">${(file.size / (1024 * 1024)).toFixed(2)} MB</p>
+                            </div>
+                        `;
+                        taskPreview.classList.remove('d-none');
+                        dropZone.style.display = 'none';
+                    };
+                    reader.readAsDataURL(file);
+                } else {
+                    alert('Please select a valid image file.');
+                    taskFileInput.value = '';
+                }
+            } else if (pdfRadio.checked) {
+                // Handle PDF preview
+                if (fileExt === 'pdf') {
+                    previewContent.innerHTML = `
+                        <div class="text-center">
+                            <i class="fas fa-file-pdf fa-4x text-danger mb-3"></i>
+                            <h6 class="mb-1">${escapeHtml(file.name)}</h6>
+                            <p class="text-muted small">${(file.size / (1024 * 1024)).toFixed(2)} MB</p>
+                        </div>
+                    `;
+                    taskPreview.classList.remove('d-none');
+                    dropZone.style.display = 'none';
+                } else {
+                    alert('Please select a valid PDF file.');
+                    taskFileInput.value = '';
+                }
+            }
+        }
+        
+        // Remove file
+        if (removeFile) {
+            removeFile.addEventListener('click', function() {
+                resetFileInput();
+            });
+        }
+    }
+    
+    // Form validation
+    const form = document.getElementById('taskForm');
+    form.addEventListener('submit', function(e) {
+        const title = document.getElementById('title').value.trim();
+        const category = document.getElementById('category_id').value;
+        
+        if (!title) {
+            e.preventDefault();
+            alert('Please enter a task title');
+            document.getElementById('title').focus();
+            return;
+        }
+        
+        if (!category) {
+            e.preventDefault();
+            alert('Please select a category');
+            document.getElementById('category_id').focus();
+            return;
+        }
+        
+        if (textRadio.checked) {
+            const description = document.getElementById('description').value.trim();
+            if (!description) {
+                e.preventDefault();
+                alert('Please enter a task description');
+                document.getElementById('description').focus();
+                return;
+            }
+        } else {
+            if (!taskFileInput.files || taskFileInput.files.length === 0) {
+                e.preventDefault();
+                alert('Please select a file to upload');
+                return;
+            }
+        }
+    });
+    
+    // Character counter for title
+    const titleInput = document.getElementById('title');
+    titleInput.addEventListener('input', function() {
+        if (this.value.length > 200) {
+            this.value = this.value.substring(0, 200);
+        }
+    });
+});
+
+function escapeHtml(text) {
+    if (!text) return '';
+    const div = document.createElement('div');
+    div.appendChild(document.createTextNode(text));
+    return div.innerHTML;
+}
+</script>
+{% endblock %}

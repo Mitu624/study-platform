@@ -1,0 +1,638 @@
+{% extends "base.html" %}
+
+{% block title %}Submit Solution{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-12 col-lg-10">
+            <!-- Header -->
+            <div class="mb-4">
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb">
+                        <li class="breadcrumb-item"><a href="{{ url_for('tasks') }}">Tasks</a></li>
+                        <li class="breadcrumb-item"><a href="{{ url_for('view_task', task_id=task.id) }}">{{ task.title }}</a></li>
+                        <li class="breadcrumb-item active">Submit Solution</li>
+                    </ol>
+                </nav>
+                
+                <div class="d-flex align-items-center gap-3">
+                    <div class="avatar-circle bg-primary text-white">
+                        <i class="fas fa-pen"></i>
+                    </div>
+                    <div>
+                        <h1 class="h2 mb-1">Submit Your Solution</h1>
+                        <p class="text-muted mb-0">for "{{ task.title }}"</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Task Summary Card - FIXED to handle None description -->
+            <div class="card border-0 shadow-sm bg-light mb-4">
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col-12 col-md-8">
+                            <h5 class="fw-bold mb-2">{{ task.title }}</h5>
+                            
+                            <!-- Task Preview based on type -->
+                            <div class="mb-2">
+                                {% if task.task_type == 'text' %}
+                                    {% if task.description %}
+                                        <p class="text-muted small mb-2">{{ task.description[:200] }}{% if task.description|length > 200 %}...{% endif %}</p>
+                                    {% else %}
+                                        <p class="text-muted small mb-2 fst-italic">No description provided</p>
+                                    {% endif %}
+                                {% elif task.task_type == 'image' %}
+                                    <div class="d-flex align-items-center gap-2 text-muted small mb-2">
+                                        <i class="fas fa-image fa-lg text-success"></i>
+                                        <span>This is an <strong>image task</strong>. Please upload an image solution.</span>
+                                    </div>
+                                    {% if task.file_path %}
+                                        <div class="mt-2">
+                                            <img src="{{ url_for('download_file', file_path=task.file_path) }}" 
+                                                 alt="Task preview" 
+                                                 class="img-thumbnail rounded" 
+                                                 style="max-height: 100px; cursor: pointer;"
+                                                 onclick="window.open('{{ url_for('view_task_file', file_path=task.file_path) }}', '_blank')">
+                                        </div>
+                                    {% endif %}
+                                {% elif task.task_type == 'pdf' %}
+                                    <div class="d-flex align-items-center gap-2 text-muted small mb-2">
+                                        <i class="fas fa-file-pdf fa-lg text-danger"></i>
+                                        <span>This is a <strong>PDF task</strong>. Please upload a document solution.</span>
+                                    </div>
+                                    {% if task.file_path %}
+                                        <div class="mt-2">
+                                            <i class="fas fa-file-pdf fa-2x text-danger"></i>
+                                            <span class="ms-2 small">{{ task.file_path.split('/')[-1] }}</span>
+                                            <a href="{{ url_for('view_task_file', file_path=task.file_path) }}" 
+                                               class="btn btn-sm btn-outline-primary rounded-pill ms-2" target="_blank">
+                                                <i class="fas fa-eye me-1"></i>View
+                                            </a>
+                                        </div>
+                                    {% endif %}
+                                {% else %}
+                                    <p class="text-muted small mb-2">{{ task.description|default('No description provided', true) }}</p>
+                                {% endif %}
+                            </div>
+                            
+                            <!-- Task metadata badges -->
+                            <div class="d-flex flex-wrap gap-2 mt-2">
+                                <span class="badge bg-info-soft text-info">
+                                    <i class="fas fa-folder me-1"></i>{{ task.category.name }}
+                                </span>
+                                <span class="badge 
+                                    {% if task.task_type == 'text' %}bg-primary-soft text-primary
+                                    {% elif task.task_type == 'image' %}bg-success-soft text-success
+                                    {% elif task.task_type == 'pdf' %}bg-danger-soft text-danger
+                                    {% endif %}">
+                                    <i class="fas 
+                                        {% if task.task_type == 'text' %}fa-align-left
+                                        {% elif task.task_type == 'image' %}fa-image
+                                        {% elif task.task_type == 'pdf' %}fa-file-pdf
+                                        {% endif %} me-1"></i>
+                                    {{ task.task_type|capitalize }} Task
+                                </span>
+                                <span class="text-muted small">
+                                    <i class="fas fa-user me-1"></i>{{ task.creator.username }}
+                                </span>
+                                {% if task.file_size %}
+                                <span class="text-muted small">
+                                    <i class="fas fa-weight me-1"></i>{{ (task.file_size / 1024 / 1024)|round(2) }} MB
+                                </span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <!-- Back button -->
+                        <div class="col-12 col-md-4 text-md-end mt-3 mt-md-0">
+                            <a href="{{ url_for('view_task', task_id=task.id) }}" class="btn btn-outline-primary rounded-pill">
+                                <i class="fas fa-arrow-left me-2"></i>Back to Task
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Solution Submission Tabs -->
+            <div class="card border-0 shadow">
+                <div class="card-header bg-white border-0 pt-4">
+                    <ul class="nav nav-tabs card-header-tabs" id="solutionTabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="text-tab" data-bs-toggle="tab" data-bs-target="#text" type="button" role="tab">
+                                <i class="fas fa-align-left me-2"></i>Text Solution
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="image-tab" data-bs-toggle="tab" data-bs-target="#image" type="button" role="tab">
+                                <i class="fas fa-image me-2"></i>Image Solution
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="document-tab" data-bs-toggle="tab" data-bs-target="#document" type="button" role="tab">
+                                <i class="fas fa-file-alt me-2"></i>Document
+                            </button>
+                        </li>
+                    </ul>
+                </div>
+                
+                <div class="card-body">
+                    <div class="tab-content" id="solutionTabsContent">
+                        <!-- Text Solution Tab -->
+                        <div class="tab-pane fade show active" id="text" role="tabpanel">
+                            <form method="POST" action="{{ url_for('submit_solution', task_id=task.id) }}" class="needs-validation" novalidate>
+                                <input type="hidden" name="solution_type" value="text">
+                                
+                                <div class="mb-3">
+                                    <label for="content" class="form-label fw-semibold">
+                                        Your Solution <span class="text-danger">*</span>
+                                    </label>
+                                    <textarea class="form-control form-control-lg" 
+                                              id="content" 
+                                              name="content" 
+                                              rows="10" 
+                                              required
+                                              placeholder="Write your detailed solution here..."></textarea>
+                                    <div class="form-text">
+                                        <i class="fas fa-info-circle text-info me-1"></i>
+                                        Be clear and detailed in your explanation. Include steps or reasoning.
+                                    </div>
+                                    <div class="invalid-feedback">
+                                        Please provide your solution content.
+                                    </div>
+                                </div>
+                                
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div class="text-muted small">
+                                        <i class="fas fa-clock me-1"></i>Your solution will be visible to everyone
+                                    </div>
+                                    <button type="submit" class="btn btn-primary btn-lg rounded-pill px-5">
+                                        <i class="fas fa-paper-plane me-2"></i>Submit Solution
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                        
+                        <!-- Image Solution Tab -->
+                        <div class="tab-pane fade" id="image" role="tabpanel">
+                            <form method="POST" action="{{ url_for('submit_solution', task_id=task.id) }}" 
+                                  enctype="multipart/form-data" class="needs-validation" novalidate>
+                                <input type="hidden" name="solution_type" value="image">
+                                
+                                <div class="mb-4">
+                                    <label for="image_file" class="form-label fw-semibold">
+                                        Upload Image <span class="text-danger">*</span>
+                                    </label>
+                                    
+                                    <!-- Drop Zone -->
+                                    <div class="drop-zone border rounded-3 p-4 text-center" id="dropZone">
+                                        <i class="fas fa-cloud-upload-alt fa-3x text-primary mb-3"></i>
+                                        <h5>Drag & Drop or Click to Upload</h5>
+                                        <p class="text-muted mb-2">Supported formats: PNG, JPG, JPEG, GIF, WEBP</p>
+                                        <p class="text-muted small mb-3">Maximum file size: 100MB</p>
+                                        
+                                        <input type="file" class="d-none" id="image_file" name="image" accept="image/*" required>
+                                        <button type="button" class="btn btn-outline-primary rounded-pill" id="browseBtn">
+                                            <i class="fas fa-folder-open me-2"></i>Browse Files
+                                        </button>
+                                    </div>
+                                    
+                                    <!-- Preview Area -->
+                                    <div id="imagePreview" class="mt-3 text-center d-none">
+                                        <div class="card bg-light">
+                                            <div class="card-body">
+                                                <h6 class="mb-3">Preview:</h6>
+                                                <img class="img-fluid rounded" id="preview" style="max-height: 300px;">
+                                                <div class="mt-2">
+                                                    <small class="text-muted" id="imageFileName"></small>
+                                                </div>
+                                                <button type="button" class="btn btn-sm btn-outline-danger mt-3" id="removeImage">
+                                                    <i class="fas fa-times me-1"></i>Remove
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="d-flex justify-content-end">
+                                    <button type="submit" class="btn btn-primary btn-lg rounded-pill px-5" id="submitImageBtn" disabled>
+                                        <i class="fas fa-upload me-2"></i>Upload Solution
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                        
+                        <!-- Document Solution Tab -->
+                        <div class="tab-pane fade" id="document" role="tabpanel">
+                            <form method="POST" action="{{ url_for('submit_solution', task_id=task.id) }}" 
+                                  enctype="multipart/form-data" class="needs-validation" novalidate>
+                                <input type="hidden" name="solution_type" value="document">
+                                
+                                <div class="mb-4">
+                                    <label for="document_file" class="form-label fw-semibold">
+                                        Upload Document <span class="text-danger">*</span>
+                                    </label>
+                                    
+                                    <!-- Document Drop Zone -->
+                                    <div class="drop-zone border rounded-3 p-4 text-center" id="documentDropZone">
+                                        <i class="fas fa-file-pdf fa-3x text-danger mb-3"></i>
+                                        <h5>Drag & Drop or Click to Upload</h5>
+                                        <p class="text-muted mb-2">Supported formats: PDF, DOC, DOCX, PPT, PPTX, CSV, TXT, MD</p>
+                                        <p class="text-muted small mb-3">Maximum file size: 100MB</p>
+                                        
+                                        <input type="file" class="d-none" id="document_file" 
+                                               name="document" accept=".pdf,.doc,.docx,.ppt,.pptx,.csv,.txt,.md" required>
+                                        <button type="button" class="btn btn-outline-primary rounded-pill" id="browseDocumentBtn">
+                                            <i class="fas fa-folder-open me-2"></i>Browse Files
+                                        </button>
+                                    </div>
+                                    
+                                    <!-- Document Preview Area -->
+                                    <div id="documentPreview" class="mt-3 text-center d-none">
+                                        <div class="card bg-light">
+                                            <div class="card-body">
+                                                <div id="documentPreviewContent">
+                                                    <!-- Preview will be shown here -->
+                                                </div>
+                                                <button type="button" class="btn btn-sm btn-outline-danger mt-3" id="removeDocument">
+                                                    <i class="fas fa-times me-1"></i>Remove
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="d-flex justify-content-end">
+                                    <button type="submit" class="btn btn-primary btn-lg rounded-pill px-5" id="submitDocumentBtn" disabled>
+                                        <i class="fas fa-upload me-2"></i>Upload Document
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tips Card -->
+            <div class="card border-0 bg-light mt-4">
+                <div class="card-body">
+                    <h6 class="fw-bold mb-3">
+                        <i class="fas fa-lightbulb text-warning me-2"></i>Solution Tips
+                    </h6>
+                    <div class="row g-3">
+                        <div class="col-12 col-md-6">
+                            <div class="d-flex align-items-start gap-2">
+                                <i class="fas fa-check-circle text-success mt-1"></i>
+                                <div>
+                                    <strong>Be Detailed</strong>
+                                    <p class="text-muted small mb-0">Explain your reasoning step by step for better understanding.</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <div class="d-flex align-items-start gap-2">
+                                <i class="fas fa-check-circle text-success mt-1"></i>
+                                <div>
+                                    <strong>Use Examples</strong>
+                                    <p class="text-muted small mb-0">Include examples to illustrate your points.</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <div class="d-flex align-items-start gap-2">
+                                <i class="fas fa-check-circle text-success mt-1"></i>
+                                <div>
+                                    <strong>Format Properly</strong>
+                                    <p class="text-muted small mb-0">Use clear formatting for text solutions.</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <div class="d-flex align-items-start gap-2">
+                                <i class="fas fa-check-circle text-success mt-1"></i>
+                                <div>
+                                    <strong>High Quality Images</strong>
+                                    <p class="text-muted small mb-0">Ensure images are clear and readable.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.avatar-circle {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+}
+
+.drop-zone {
+    border: 2px dashed #dee2e6;
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.drop-zone:hover,
+.drop-zone.dragover {
+    border-color: #0d6efd;
+    background-color: rgba(13, 110, 253, 0.05);
+}
+
+.badge-info-soft {
+    background-color: rgba(13, 202, 240, 0.1);
+    color: #0dcaf0;
+}
+
+.bg-primary-soft {
+    background-color: rgba(13, 110, 253, 0.1);
+    color: #0d6efd;
+}
+
+.bg-success-soft {
+    background-color: rgba(25, 135, 84, 0.1);
+    color: #198754;
+}
+
+.bg-danger-soft {
+    background-color: rgba(220, 53, 69, 0.1);
+    color: #dc3545;
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+    .avatar-circle {
+        width: 48px;
+        height: 48px;
+        font-size: 1.2rem;
+    }
+    
+    .btn-lg {
+        padding: 0.5rem 1.5rem;
+        font-size: 1rem;
+    }
+    
+    .nav-tabs .nav-link {
+        padding: 0.5rem;
+        font-size: 0.9rem;
+    }
+}
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Form validation
+    const forms = document.querySelectorAll('.needs-validation');
+    
+    Array.from(forms).forEach(form => {
+        form.addEventListener('submit', event => {
+            if (!form.checkValidity()) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+            form.classList.add('was-validated');
+        }, false);
+    });
+    
+    // Image upload functionality
+    const dropZone = document.getElementById('dropZone');
+    const imageInput = document.getElementById('image_file');
+    const browseBtn = document.getElementById('browseBtn');
+    const imagePreview = document.getElementById('imagePreview');
+    const preview = document.getElementById('preview');
+    const imageFileName = document.getElementById('imageFileName');
+    const removeImage = document.getElementById('removeImage');
+    const submitImageBtn = document.getElementById('submitImageBtn');
+    
+    if (dropZone && imageInput) {
+        // Click to browse
+        dropZone.addEventListener('click', function(e) {
+            if (e.target !== browseBtn && !browseBtn.contains(e.target)) {
+                imageInput.click();
+            }
+        });
+        
+        browseBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            imageInput.click();
+        });
+        
+        // Drag and drop
+        dropZone.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            this.classList.add('dragover');
+        });
+        
+        dropZone.addEventListener('dragleave', function(e) {
+            e.preventDefault();
+            this.classList.remove('dragover');
+        });
+        
+        dropZone.addEventListener('drop', function(e) {
+            e.preventDefault();
+            this.classList.remove('dragover');
+            
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                imageInput.files = files;
+                handleImageSelect(files[0]);
+            }
+        });
+        
+        // File selection
+        imageInput.addEventListener('change', function(e) {
+            if (this.files.length > 0) {
+                handleImageSelect(this.files[0]);
+            }
+        });
+        
+        function handleImageSelect(file) {
+            if (file.type.startsWith('image/')) {
+                // Check file size (100MB limit)
+                if (file.size > 100 * 1024 * 1024) {
+                    alert('File size exceeds 100MB limit.');
+                    imageInput.value = '';
+                    return;
+                }
+                
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    preview.src = e.target.result;
+                    imageFileName.textContent = file.name + ' (' + (file.size / (1024 * 1024)).toFixed(2) + ' MB)';
+                    imagePreview.classList.remove('d-none');
+                    dropZone.classList.add('d-none');
+                    submitImageBtn.disabled = false;
+                };
+                reader.readAsDataURL(file);
+            } else {
+                alert('Please select a valid image file.');
+                imageInput.value = '';
+            }
+        }
+        
+        // Remove image
+        if (removeImage) {
+            removeImage.addEventListener('click', function() {
+                imageInput.value = '';
+                imagePreview.classList.add('d-none');
+                dropZone.classList.remove('d-none');
+                submitImageBtn.disabled = true;
+                imageFileName.textContent = '';
+            });
+        }
+    }
+    
+    // Document upload functionality
+    const documentDropZone = document.getElementById('documentDropZone');
+    const documentInput = document.getElementById('document_file');
+    const browseDocumentBtn = document.getElementById('browseDocumentBtn');
+    const documentPreview = document.getElementById('documentPreview');
+    const documentPreviewContent = document.getElementById('documentPreviewContent');
+    const removeDocument = document.getElementById('removeDocument');
+    const submitDocumentBtn = document.getElementById('submitDocumentBtn');
+    
+    if (documentDropZone && documentInput) {
+        // Click to browse
+        documentDropZone.addEventListener('click', function(e) {
+            if (e.target !== browseDocumentBtn && !browseDocumentBtn.contains(e.target)) {
+                documentInput.click();
+            }
+        });
+        
+        browseDocumentBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            documentInput.click();
+        });
+        
+        // Drag and drop
+        documentDropZone.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            this.classList.add('dragover');
+        });
+        
+        documentDropZone.addEventListener('dragleave', function(e) {
+            e.preventDefault();
+            this.classList.remove('dragover');
+        });
+        
+        documentDropZone.addEventListener('drop', function(e) {
+            e.preventDefault();
+            this.classList.remove('dragover');
+            
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                documentInput.files = files;
+                handleDocumentSelect(files[0]);
+            }
+        });
+        
+        // File selection
+        documentInput.addEventListener('change', function(e) {
+            if (this.files.length > 0) {
+                handleDocumentSelect(this.files[0]);
+            }
+        });
+        
+        function handleDocumentSelect(file) {
+            // Check file size (100MB limit)
+            if (file.size > 100 * 1024 * 1024) {
+                alert('File size exceeds 100MB limit.');
+                documentInput.value = '';
+                return;
+            }
+            
+            const fileExt = file.name.split('.').pop().toLowerCase();
+            const allowedTypes = ['pdf', 'doc', 'docx', 'ppt', 'pptx', 'csv', 'txt', 'md'];
+            
+            if (allowedTypes.includes(fileExt)) {
+                // Determine icon based on file type
+                let icon = 'fa-file-pdf text-danger';
+                let typeName = 'PDF Document';
+                
+                if (fileExt === 'doc' || fileExt === 'docx') {
+                    icon = 'fa-file-word text-primary';
+                    typeName = 'Word Document';
+                } else if (fileExt === 'ppt' || fileExt === 'pptx') {
+                    icon = 'fa-file-powerpoint text-warning';
+                    typeName = 'PowerPoint Presentation';
+                } else if (fileExt === 'csv') {
+                    icon = 'fa-file-csv text-success';
+                    typeName = 'CSV File';
+                } else if (fileExt === 'txt') {
+                    icon = 'fa-file-alt text-info';
+                    typeName = 'Text File';
+                } else if (fileExt === 'md') {
+                    icon = 'fa-file-alt text-info';
+                    typeName = 'Markdown File';
+                }
+                
+                const fileSize = (file.size / (1024 * 1024)).toFixed(2);
+                
+                documentPreviewContent.innerHTML = `
+                    <div class="text-center">
+                        <i class="fas ${icon} fa-4x mb-3"></i>
+                        <h6 class="mb-2">${escapeHtml(file.name)}</h6>
+                        <p class="mb-1"><strong>Type:</strong> ${typeName}</p>
+                        <p class="mb-0 text-muted small">Size: ${fileSize} MB</p>
+                    </div>
+                `;
+                
+                documentPreview.classList.remove('d-none');
+                documentDropZone.classList.add('d-none');
+                submitDocumentBtn.disabled = false;
+            } else {
+                alert('Please select a valid document file (PDF, DOC, DOCX, PPT, PPTX, CSV, TXT, MD).');
+                documentInput.value = '';
+            }
+        }
+        
+        // Remove document
+        if (removeDocument) {
+            removeDocument.addEventListener('click', function() {
+                documentInput.value = '';
+                documentPreview.classList.add('d-none');
+                documentDropZone.classList.remove('d-none');
+                submitDocumentBtn.disabled = true;
+                documentPreviewContent.innerHTML = '';
+            });
+        }
+    }
+    
+    // Character counter for text area
+    const textArea = document.getElementById('content');
+    if (textArea) {
+        const charCounter = document.createElement('div');
+        charCounter.className = 'text-muted text-end small mt-1';
+        charCounter.id = 'charCounter';
+        textArea.parentNode.appendChild(charCounter);
+        
+        textArea.addEventListener('input', function() {
+            const length = this.value.length;
+            charCounter.textContent = `${length} characters`;
+            
+            if (length > 5000) {
+                charCounter.classList.add('text-warning');
+            } else {
+                charCounter.classList.remove('text-warning');
+            }
+        });
+    }
+});
+
+function escapeHtml(text) {
+    if (!text) return '';
+    const div = document.createElement('div');
+    div.appendChild(document.createTextNode(text));
+    return div.innerHTML;
+}
+</script>
+{% endblock %}

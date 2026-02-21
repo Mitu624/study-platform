@@ -1,0 +1,385 @@
+{% extends "base.html" %}
+
+{% block title %}Create New Category{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8 col-lg-6">
+        <!-- Main Form Card -->
+        <div class="card shadow">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0"><i class="fas fa-folder-plus me-2"></i>Create New Category</h4>
+            </div>
+            
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('create_category') }}" id="categoryForm">
+                    <!-- Category Name Field -->
+                    <div class="mb-4">
+                        <label for="name" class="form-label fw-bold">
+                            <i class="fas fa-tag me-1"></i>Category Name <span class="text-danger">*</span>
+                        </label>
+                        <input type="text" 
+                               class="form-control form-control-lg" 
+                               id="name" 
+                               name="name" 
+                               required 
+                               maxlength="100"
+                               placeholder="e.g., Mathematics, Physics, Programming"
+                               autocomplete="off">
+                        <div class="form-text">
+                            <i class="fas fa-info-circle text-info"></i> 
+                            Choose a clear, descriptive name (max 100 characters)
+                        </div>
+                        <div class="invalid-feedback" id="nameError"></div>
+                    </div>
+                    
+                    <!-- Category Description Field -->
+                    <div class="mb-4">
+                        <label for="description" class="form-label fw-bold">
+                            <i class="fas fa-align-left me-1"></i>Description
+                        </label>
+                        <textarea class="form-control" 
+                                  id="description" 
+                                  name="description" 
+                                  rows="5" 
+                                  maxlength="500"
+                                  placeholder="Describe what kind of content belongs in this category..."></textarea>
+                        <div class="form-text">
+                            <i class="fas fa-info-circle text-info"></i> 
+                            Optional: Help others understand the category's purpose (max 500 characters)
+                        </div>
+                        <div class="text-muted text-end mt-1">
+                            <span id="charCount">0</span>/500 characters
+                        </div>
+                    </div>
+                    
+                    <!-- Category Preview (Live Preview) -->
+                    <div class="mb-4 p-3 bg-light rounded" id="previewSection" style="display: none;">
+                        <h6 class="text-muted mb-2"><i class="fas fa-eye me-1"></i>Preview:</h6>
+                        <div class="card">
+                            <div class="card-header bg-info text-white">
+                                <span id="previewName">Category Name</span>
+                            </div>
+                            <div class="card-body">
+                                <p class="card-text text-muted" id="previewDescription">
+                                    Category description will appear here...
+                                </p>
+                                <small class="text-muted">
+                                    <i class="fas fa-user"></i> Created by you
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Form Actions - FIXED ALIGNMENT -->
+                    <div class="d-flex flex-column flex-sm-row justify-content-between align-items-center mt-4 gap-3">
+                        <a href="{{ url_for('categories') }}" class="btn btn-outline-secondary w-100 w-sm-auto order-2 order-sm-1 d-inline-flex align-items-center justify-content-center">
+                            <i class="fas fa-arrow-left me-2"></i>
+                            <span>Back to Categories</span>
+                        </a>
+                        
+                        <div class="d-flex gap-2 w-100 w-sm-auto justify-content-center order-1 order-sm-2">
+                            <button type="reset" class="btn btn-outline-warning d-inline-flex align-items-center justify-content-center flex-1" id="resetBtn">
+                                <i class="fas fa-undo me-2"></i>
+                                <span>Reset</span>
+                            </button>
+                            <button type="submit" class="btn btn-primary d-inline-flex align-items-center justify-content-center flex-1" id="submitBtn">
+                                <i class="fas fa-save me-2"></i>
+                                <span>Create Category</span>
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <!-- Tips and Examples Card -->
+        <div class="card mt-4 shadow-sm">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0"><i class="fas fa-lightbulb me-2"></i>Category Creation Tips</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6 class="fw-bold text-success"><i class="fas fa-check-circle me-1"></i>Good Examples:</h6>
+                        <ul class="list-unstyled">
+                            <li class="mb-2">
+                                <span class="badge bg-success me-1">✓</span>
+                                <strong>Mathematics</strong> 
+                                <small class="text-muted">- Calculus, Algebra, Geometry</small>
+                            </li>
+                            <li class="mb-2">
+                                <span class="badge bg-success me-1">✓</span>
+                                <strong>Physics</strong> 
+                                <small class="text-muted">- Mechanics, Thermodynamics</small>
+                            </li>
+                            <li class="mb-2">
+                                <span class="badge bg-success me-1">✓</span>
+                                <strong>Programming</strong> 
+                                <small class="text-muted">- Python, JavaScript, Web Dev</small>
+                            </li>
+                        </ul>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <h6 class="fw-bold text-danger"><i class="fas fa-exclamation-circle me-1"></i>Avoid:</h6>
+                        <ul class="list-unstyled">
+                            <li class="mb-2">
+                                <span class="badge bg-danger me-1">✗</span>
+                                <strong>Stuff</strong> 
+                                <small class="text-muted">- Too vague</small>
+                            </li>
+                            <li class="mb-2">
+                                <span class="badge bg-danger me-1">✗</span>
+                                <strong>My Files</strong> 
+                                <small class="text-muted">- Too personal</small>
+                            </li>
+                            <li class="mb-2">
+                                <span class="badge bg-danger me-1">✗</span>
+                                <strong>12345</strong> 
+                                <small class="text-muted">- Not descriptive</small>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <hr>
+                
+                <div class="row mt-2">
+                    <div class="col-12">
+                        <h6 class="fw-bold"><i class="fas fa-star text-warning me-1"></i>Category Guidelines:</h6>
+                        <ul class="mb-0">
+                            <li>Use clear, specific names that reflect the subject matter</li>
+                            <li>Organize by academic subject (Mathematics, Physics, Literature)</li>
+                            <li>Or organize by content type (Lecture Notes, Exam Papers, Tutorials)</li>
+                            <li>Add descriptions to help others understand what belongs here</li>
+                            <li>Categories are visible to all users - keep them general and useful</li>
+                            <li>You can edit category details later, or delete them if you're an admin</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Quick Actions Card -->
+        <div class="card mt-3 bg-light">
+            <div class="card-body">
+                <div class="row align-items-center">
+                    <div class="col-md-8">
+                        <small class="text-muted">
+                            <i class="fas fa-info-circle me-1"></i>
+                            After creating a category, you can upload study materials and create tasks.
+                        </small>
+                    </div>
+                    <div class="col-md-4 text-md-end">
+                        <a href="{{ url_for('upload_material') }}" class="btn btn-sm btn-outline-success me-1">
+                            <i class="fas fa-upload"></i> Upload
+                        </a>
+                        <a href="{{ url_for('add_task') }}" class="btn btn-sm btn-outline-info">
+                            <i class="fas fa-tasks"></i> Add Task
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+/* Button alignment fixes */
+.flex-1 {
+    flex: 1 1 0px;
+    min-width: 120px;
+}
+
+.btn.d-inline-flex {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 0.5rem;
+}
+
+.btn i {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+    margin-top: -1px;
+}
+
+/* Responsive utilities */
+@media (min-width: 576px) {
+    .w-sm-auto {
+        width: auto !important;
+    }
+}
+
+@media (max-width: 575.98px) {
+    .order-1 {
+        order: 1 !important;
+    }
+    .order-2 {
+        order: 2 !important;
+    }
+    
+    .flex-1 {
+        min-width: 100px;
+    }
+    
+    .gap-2 {
+        gap: 0.75rem !important;
+    }
+    
+    .btn {
+        padding: 0.5rem 1rem;
+        font-size: 0.95rem;
+    }
+}
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Get form elements
+    const nameInput = document.getElementById('name');
+    const descInput = document.getElementById('description');
+    const previewSection = document.getElementById('previewSection');
+    const previewName = document.getElementById('previewName');
+    const previewDesc = document.getElementById('previewDescription');
+    const charCount = document.getElementById('charCount');
+    const resetBtn = document.getElementById('resetBtn');
+    const form = document.getElementById('categoryForm');
+    const nameError = document.getElementById('nameError');
+    
+    // Auto-focus name input
+    nameInput.focus();
+    
+    // Character counter for description
+    descInput.addEventListener('input', function() {
+        const count = this.value.length;
+        charCount.textContent = count;
+        
+        // Change color based on length
+        if (count > 400) {
+            charCount.className = 'text-warning';
+        } else if (count > 450) {
+            charCount.className = 'text-danger';
+        } else {
+            charCount.className = 'text-muted';
+        }
+    });
+    
+    // Live preview with debounce
+    let previewTimeout;
+    
+    function updatePreview() {
+        const name = nameInput.value.trim();
+        const desc = descInput.value.trim();
+        
+        if (name || desc) {
+            previewSection.style.display = 'block';
+            previewName.textContent = name || 'Category Name';
+            previewDesc.textContent = desc || 'No description provided yet.';
+        } else {
+            previewSection.style.display = 'none';
+        }
+    }
+    
+    nameInput.addEventListener('input', function() {
+        clearTimeout(previewTimeout);
+        previewTimeout = setTimeout(updatePreview, 300);
+        
+        // Real-time name validation
+        validateName(this.value);
+    });
+    
+    descInput.addEventListener('input', function() {
+        clearTimeout(previewTimeout);
+        previewTimeout = setTimeout(updatePreview, 300);
+    });
+    
+    // Name validation function
+    function validateName(name) {
+        if (name.length > 100) {
+            nameInput.classList.add('is-invalid');
+            nameError.textContent = 'Category name must be less than 100 characters';
+            return false;
+        }
+        
+        if (name.length < 3 && name.length > 0) {
+            nameInput.classList.add('is-invalid');
+            nameError.textContent = 'Category name must be at least 3 characters';
+            return false;
+        }
+        
+        // Check for special characters
+        const specialChars = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]+/;
+        if (specialChars.test(name)) {
+            nameInput.classList.add('is-invalid');
+            nameError.textContent = 'Category name should not contain special characters';
+            return false;
+        }
+        
+        nameInput.classList.remove('is-invalid');
+        return true;
+    }
+    
+    // Form submission validation
+    form.addEventListener('submit', function(e) {
+        const name = nameInput.value.trim();
+        
+        if (!name) {
+            e.preventDefault();
+            nameInput.classList.add('is-invalid');
+            nameError.textContent = 'Category name is required';
+            nameInput.focus();
+            return;
+        }
+        
+        if (name.length < 3) {
+            e.preventDefault();
+            nameInput.classList.add('is-invalid');
+            nameError.textContent = 'Category name must be at least 3 characters';
+            nameInput.focus();
+            return;
+        }
+        
+        if (!validateName(name)) {
+            e.preventDefault();
+        }
+    });
+    
+    // Reset button functionality
+    resetBtn.addEventListener('click', function(e) {
+        e.preventDefault();
+        
+        if (confirm('Are you sure you want to reset the form? All entered data will be lost.')) {
+            nameInput.value = '';
+            descInput.value = '';
+            charCount.textContent = '0';
+            previewSection.style.display = 'none';
+            nameInput.classList.remove('is-invalid');
+            nameInput.focus();
+        }
+    });
+    
+    // Prevent accidental navigation if form is dirty
+    let formDirty = false;
+    
+    nameInput.addEventListener('input', () => formDirty = true);
+    descInput.addEventListener('input', () => formDirty = true);
+    
+    window.addEventListener('beforeunload', function(e) {
+        if (formDirty) {
+            e.preventDefault();
+            e.returnValue = 'You have unsaved changes. Are you sure you want to leave?';
+        }
+    });
+    
+    form.addEventListener('submit', () => {
+        formDirty = false;
+    });
+});
+</script>
+{% endblock %}

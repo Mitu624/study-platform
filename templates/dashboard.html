@@ -1,0 +1,229 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Welcome Section -->
+    <div class="col-12 mb-4">
+        <div class="card bg-light">
+            <div class="card-body">
+                <h2>Welcome back, {{ current_user.username }}!</h2>
+                <p class="text-muted">Here's what's happening in your study platform</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="col-md-3 mb-3">
+        <div class="card text-white bg-primary">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="card-title">Categories</h6>
+                        <h2 class="mb-0">{{ stats.total_categories }}</h2>
+                    </div>
+                    <i class="fas fa-folder fa-3x opacity-50"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3 mb-3">
+        <div class="card text-white bg-success">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="card-title">Study Materials</h6>
+                        <h2 class="mb-0">{{ stats.total_materials }}</h2>
+                    </div>
+                    <i class="fas fa-file-alt fa-3x opacity-50"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3 mb-3">
+        <div class="card text-white bg-warning">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="card-title">Tasks</h6>
+                        <h2 class="mb-0">{{ stats.total_tasks }}</h2>
+                    </div>
+                    <i class="fas fa-tasks fa-3x opacity-50"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3 mb-3">
+        <div class="card text-white bg-info">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="card-title">My Contributions</h6>
+                        <h2 class="mb-0">{{ stats.my_materials }}</h2>
+                    </div>
+                    <i class="fas fa-upload fa-3x opacity-50"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Categories -->
+    <div class="col-md-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="fas fa-folder me-2"></i>Recent Categories</h5>
+                <a href="{{ url_for('categories') }}" class="btn btn-sm btn-primary">
+                    <i class="fas fa-arrow-right"></i> View All
+                </a>
+            </div>
+            <div class="card-body">
+                {% if categories %}
+                    <div class="list-group">
+                        {% for category in categories %}
+                            <a href="{{ url_for('categories') }}#category-{{ category.id }}" 
+                               class="list-group-item list-group-item-action">
+                                <div class="d-flex w-100 justify-content-between">
+                                    <h6 class="mb-1">
+                                        <i class="fas fa-folder-open text-warning me-1"></i>
+                                        {{ category.name }}
+                                    </h6>
+                                    <small class="text-muted">{{ category.created_at.strftime('%Y-%m-%d') }}</small>
+                                </div>
+                                <p class="mb-1 text-muted small">
+                                    {% if category.description %}
+                                        {{ category.description|truncate(100) }}
+                                    {% else %}
+                                        <span class="fst-italic">No description provided</span>
+                                    {% endif %}
+                                </p>
+                                <small>
+                                    <i class="fas fa-user me-1"></i>{{ category.creator.username }}
+                                </small>
+                            </a>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-folder-open fa-3x text-muted mb-3"></i>
+                        <p class="text-muted">No categories yet.</p>
+                        <a href="{{ url_for('create_category') }}" class="btn btn-primary btn-sm">
+                            <i class="fas fa-plus-circle"></i> Create First Category
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Tasks -->
+    <div class="col-md-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="fas fa-tasks me-2"></i>Recent Tasks</h5>
+                <a href="{{ url_for('tasks') }}" class="btn btn-sm btn-primary">
+                    <i class="fas fa-arrow-right"></i> View All
+                </a>
+            </div>
+            <div class="card-body">
+                {% if recent_tasks %}
+                    <div class="list-group">
+                        {% for task in recent_tasks %}
+                            <a href="{{ url_for('view_task', task_id=task.id) }}" 
+                               class="list-group-item list-group-item-action">
+                                <div class="d-flex w-100 justify-content-between">
+                                    <h6 class="mb-1">
+                                        <i class="fas fa-puzzle-piece text-info me-1"></i>
+                                        {{ task.title }}
+                                    </h6>
+                                    <small class="text-muted">{{ task.created_at.strftime('%Y-%m-%d') }}</small>
+                                </div>
+                                <p class="mb-1 text-muted small">
+                                    {% if task.description %}
+                                        {{ task.description|truncate(100) }}
+                                    {% else %}
+                                        <span class="fst-italic">No description provided</span>
+                                    {% endif %}
+                                </p>
+                                <small>
+                                    <i class="fas fa-user me-1"></i>{{ task.creator.username }} |
+                                    <i class="fas fa-folder me-1"></i>{{ task.category.name }}
+                                </small>
+                            </a>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-tasks fa-3x text-muted mb-3"></i>
+                        <p class="text-muted">No tasks yet.</p>
+                        <a href="{{ url_for('add_task') }}" class="btn btn-primary btn-sm">
+                            <i class="fas fa-plus-circle"></i> Create First Task
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Stats -->
+    <div class="col-12 mb-4">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="fas fa-chart-bar me-2"></i>Your Activity</h5>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-4">
+                        <h3>{{ stats.my_materials }}</h3>
+                        <small class="text-muted">Materials Uploaded</small>
+                    </div>
+                    <div class="col-4">
+                        <h3>{{ stats.my_tasks }}</h3>
+                        <small class="text-muted">Tasks Created</small>
+                    </div>
+                    <div class="col-4">
+                        <h3>{{ stats.my_solutions }}</h3>
+                        <small class="text-muted">Solutions Submitted</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0"><i class="fas fa-bolt me-2"></i>Quick Actions</h5>
+            </div>
+            <div class="card-body">
+                <div class="row g-2">
+                    <div class="col-md-3 col-6">
+                        <a href="{{ url_for('upload_material') }}" class="btn btn-outline-primary w-100">
+                            <i class="fas fa-upload"></i> Upload Material
+                        </a>
+                    </div>
+                    <div class="col-md-3 col-6">
+                        <a href="{{ url_for('add_task') }}" class="btn btn-outline-success w-100">
+                            <i class="fas fa-plus-circle"></i> Create Task
+                        </a>
+                    </div>
+                    <div class="col-md-3 col-6">
+                        <a href="{{ url_for('create_category') }}" class="btn btn-outline-info w-100">
+                            <i class="fas fa-folder-plus"></i> New Category
+                        </a>
+                    </div>
+                    <div class="col-md-3 col-6">
+                        <a href="{{ url_for('tasks') }}" class="btn btn-outline-warning w-100">
+                            <i class="fas fa-puzzle-piece"></i> Solve Tasks
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

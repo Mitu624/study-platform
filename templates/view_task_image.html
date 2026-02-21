@@ -1,0 +1,148 @@
+{% extends "base.html" %}
+
+{% block title %}{{ task.title }} - Image Task{% endblock %}
+
+{% block content %}
+<div class="container">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb" class="my-3">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ url_for('tasks') }}">Tasks</a></li>
+            <li class="breadcrumb-item"><a href="{{ url_for('view_task', task_id=task.id) }}">{{ task.title }}</a></li>
+            <li class="breadcrumb-item active">View Image</li>
+        </ol>
+    </nav>
+
+    <div class="row">
+        <div class="col-12 col-lg-8 mx-auto">
+            <!-- Task Info Card -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-white border-0 pt-4 px-4">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <span class="badge bg-primary-soft text-primary rounded-pill px-3 py-2 mb-2">
+                                <i class="fas fa-image me-1"></i>Image Task
+                            </span>
+                            <h1 class="h3 mb-2">{{ task.title }}</h1>
+                            <div class="d-flex flex-wrap gap-3">
+                                <span class="text-muted">
+                                    <i class="fas fa-user me-1"></i>{{ task.creator.username }}
+                                </span>
+                                <span class="text-muted">
+                                    <i class="fas fa-folder me-1"></i>{{ task.category.name }}
+                                </span>
+                                <span class="text-muted">
+                                    <i class="fas fa-clock me-1"></i>{{ task.created_at.strftime('%B %d, %Y') }}
+                                </span>
+                            </div>
+                        </div>
+                        <a href="{{ url_for('view_task', task_id=task.id) }}" class="btn btn-outline-primary rounded-pill">
+                            <i class="fas fa-arrow-left me-2"></i>Back to Task
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Image Viewer Card -->
+            <div class="card border-0 shadow">
+                <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="fas fa-image me-2"></i>{{ task.title }}
+                    </h5>
+                    <div>
+                        <button onclick="zoomIn()" class="btn btn-sm btn-light me-1" title="Zoom In">
+                            <i class="fas fa-search-plus"></i>
+                        </button>
+                        <button onclick="zoomOut()" class="btn btn-sm btn-light me-1" title="Zoom Out">
+                            <i class="fas fa-search-minus"></i>
+                        </button>
+                        <button onclick="resetZoom()" class="btn btn-sm btn-light me-1" title="Reset Zoom">
+                            <i class="fas fa-undo"></i>
+                        </button>
+                        <a href="{{ url_for('download_file', file_path=task.file_path) }}?download=true" 
+                           class="btn btn-sm btn-success" title="Download">
+                            <i class="fas fa-download"></i>
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body p-0 bg-light text-center" style="min-height: 500px; overflow: auto;">
+                    <div class="p-3" id="image-container">
+                        <img src="{{ url_for('download_file', file_path=task.file_path) }}" 
+                             alt="{{ task.title }}"
+                             class="img-fluid" 
+                             id="task-image"
+                             style="transition: transform 0.3s ease; max-height: 70vh;">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.badge-primary-soft {
+    background-color: rgba(13, 110, 253, 0.1);
+    color: #0d6efd;
+}
+
+#image-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 500px;
+}
+
+#task-image {
+    cursor: zoom-in;
+}
+
+@media (max-width: 768px) {
+    .h3 {
+        font-size: 1.5rem;
+    }
+}
+</style>
+
+<script>
+let currentZoom = 1;
+const zoomStep = 0.1;
+const img = document.getElementById('task-image');
+
+function zoomIn() {
+    if (img) {
+        currentZoom += zoomStep;
+        img.style.transform = 'scale(' + currentZoom + ')';
+    }
+}
+
+function zoomOut() {
+    if (img && currentZoom > zoomStep) {
+        currentZoom -= zoomStep;
+        img.style.transform = 'scale(' + currentZoom + ')';
+    }
+}
+
+function resetZoom() {
+    if (img) {
+        currentZoom = 1;
+        img.style.transform = 'scale(1)';
+    }
+}
+
+// Keyboard shortcuts
+document.addEventListener('keydown', function(e) {
+    if (e.ctrlKey && e.key === '=') {
+        e.preventDefault();
+        zoomIn();
+    }
+    if (e.ctrlKey && e.key === '-') {
+        e.preventDefault();
+        zoomOut();
+    }
+    if (e.ctrlKey && e.key === '0') {
+        e.preventDefault();
+        resetZoom();
+    }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,27 @@
+<div class="card mb-3 solution-card" id="solution-{{ solution.id }}">
+    <div class="card-header bg-light d-flex justify-content-between align-items-center">
+        <div>
+            <i class="fas fa-user-circle me-2"></i>
+            <strong>{{ solution.solver.username }}</strong>
+            <small class="text-muted ms-2">{{ solution.created_at.strftime('%Y-%m-%d %H:%M') }}</small>
+        </div>
+        {% if current_user.is_admin or solution.solved_by == current_user.id %}
+        <button class="btn btn-sm btn-danger" onclick="deleteSolution({{ solution.id }})">
+            <i class="fas fa-trash"></i>
+        </button>
+        {% endif %}
+    </div>
+    <div class="card-body">
+        {% if solution.solution_type == 'text' %}
+            <p class="card-text">{{ solution.content }}</p>
+        {% else %}
+            <div class="text-center">
+                <img src="{{ url_for('download_file', file_path=solution.file_path) }}" 
+                     class="img-fluid solution-image" 
+                     alt="Solution image"
+                     style="max-height: 300px;"
+                     onclick="window.open(this.src, '_blank')">
+            </div>
+        {% endif %}
+    </div>
+</div>
