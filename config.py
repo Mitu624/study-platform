@@ -1,21 +1,23 @@
 import os
-from datetime import timedelta
 
 class Config:
-    # PythonAnywhere can use SQLite (simpler) or MySQL (better for multiple users)
-    # For SQLite (simpler, works out of the box):
-    BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-    SQLALCHEMY_DATABASE_URI = 'sqlite:///' + os.path.join(BASE_DIR, 'database.db')
+    # Database - handle Railway's PostgreSQL
+    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL', 'sqlite:///database.db')
     
-    # If you want MySQL instead (better for multiple concurrent users), uncomment:
-    # SQLALCHEMY_DATABASE_URI = 'mysql+mysqlconnector://{username}:{password}@{host}/{databasename}'
+    # Fix for PostgreSQL URL format
+    if SQLALCHEMY_DATABASE_URI and SQLALCHEMY_DATABASE_URI.startswith('postgres://'):
+        SQLALCHEMY_DATABASE_URI = SQLALCHEMY_DATABASE_URI.replace('postgres://', 'postgresql://', 1)
     
     SQLALCHEMY_TRACK_MODIFICATIONS = False
-    SECRET_KEY = os.environ.get('SECRET_KEY', 'change-this-in-production')
+    SECRET_KEY = os.environ.get('SECRET_KEY', 'dev-key-change-this')
     
-    # Upload configurations
+    # Upload folder - use /tmp for Railway or persistent volume
+    BASE_DIR = os.path.dirname(os.path.abspath(__file__))
     UPLOAD_FOLDER = os.path.join(BASE_DIR, 'uploads')
     MAX_CONTENT_LENGTH = 100 * 1024 * 1024  # 100MB
+    
+    # Ensure upload directory exists
+    os.makedirs(UPLOAD_FOLDER, exist_ok=True)
     
     # Pagination
     ITEMS_PER_PAGE = 20
