@@ -34,6 +34,9 @@ from utils.helpers import *
 app = Flask(__name__)
 app.config.from_object(Config)
 
+import mimetypes
+mimetypes.add_type('application/pdf', '.pdf')
+
 # Initialize extensions
 init_db(app)
 init_auth(app)
