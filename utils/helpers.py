@@ -151,3 +151,30 @@ def get_mime_type(filename):
     """
     ext = get_file_extension(filename)
     return current_app.config['MIME_TYPES'].get(ext, 'application/octet-stream')
+
+def optimize_image(file_path):
+    """Skip optimization if Pillow is not available"""
+    try:
+        from PIL import Image
+        img = Image.open(file_path)
+        
+        # Convert RGBA to RGB if necessary
+        if img.mode in ('RGBA', 'LA', 'P'):
+            background = Image.new('RGB', img.size, (255, 255, 255))
+            if img.mode == 'P':
+                img = img.convert('RGBA')
+            background.paste(img, mask=img.split()[-1] if img.mode == 'RGBA' else None)
+            img = background
+        
+        # Resize if too large
+        if img.width > 1920 or img.height > 1080:
+            img.thumbnail((1920, 1080), Image.Resampling.LANCZOS)
+        
+        # Save with optimization
+        img.save(file_path, optimize=True, quality=85)
+        
+    except ImportError:
+        # Pillow not available - skip optimization
+        pass
+    except Exception as e:
+        current_app.logger.error(f"Error optimizing image {file_path}: {e}")
